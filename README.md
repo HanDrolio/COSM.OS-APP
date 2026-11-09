@@ -61,3 +61,9 @@ A LoRA adapter must be merged and converted to GGUF before using it in the deskt
 Recommended first milestone: test installer, first-download integrity, streaming output, all persona locks, memory import, then optimize speed and add voice.
 
 License for SmolLM2 and llama.cpp are upstream and separate from this project.
+
+## One installer, two programs
+
+The Windows installer now includes both the COSM.OS LOCAL chatbot and a separate **COSM.OS Model Trainer** GUI. Launch the trainer from the chatbot's **Open Trainer** button, or directly from the installed application's `resources/trainer/COSM.OS-Model-Trainer.exe`. The trainer includes a standalone data importer and can prepare private TXT/MD/JSON files without Python installed. Its data is stored under `%LOCALAPPDATA%/COSM.OS LOCAL/trainer/` and is never included in GitHub artifacts.
+
+**Important:** Training neural weights is not possible on the old ThinkCentre CPU/iGPU with this installer alone. Actual LoRA fine-tuning requires a separate CUDA GPU machine and Python 3.11 environment with dependencies from `training/requirements.txt`. On that machine set `COSMOS_TRAIN_PYTHON` to the Python executable before launching the trainer. This is not a claim that any weights have been fine-tuned. The training window is a separate executable bundled with the chatbot, not a second installer.

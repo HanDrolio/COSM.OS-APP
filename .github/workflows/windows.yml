@@ -22,6 +22,13 @@ jobs:
       - name: Download bundled CPU inference engine
         shell: pwsh
         run: ./scripts/prepare-runtime.ps1
+      - name: Package trainer and data importer executables
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check pyinstaller==6.16.0
+          pyinstaller --noconfirm --clean --onefile --windowed --name COSM.OS-Model-Trainer --distpath dist-trainer --workpath build-trainer --specpath build-trainer --add-data "training/train_lora.py;training" training/control_board.py
+          pyinstaller --noconfirm --clean --onefile --console --name COSM.OS-Data-Importer --distpath dist-trainer --workpath build-importer --specpath build-importer training/feed_data.py
+          if (!(Test-Path 'dist-trainer/COSM.OS-Model-Trainer.exe') -or !(Test-Path 'dist-trainer/COSM.OS-Data-Importer.exe')) { throw 'Trainer packaging failed' }
       - name: Build Windows installer
         run: npm run dist
       - uses: actions/upload-artifact@v4

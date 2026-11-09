@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Separate COSM.OS training dashboard. Python 3.11 and CUDA recommended."""
 import json
+import os
 import queue
 import subprocess
 import sys
@@ -9,8 +10,26 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data"
+ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+USER_ROOT = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "COSM.OS LOCAL" / "trainer"
+DATA = USER_ROOT / "data"
+DATA.mkdir(parents=True, exist_ok=True)
+
+def feeder_command(paths):
+    if getattr(sys, "frozen", False):
+        feeder = Path(sys.executable).with_name("COSM.OS-Data-Importer.exe")
+        if not feeder.exists():
+            raise FileNotFoundError("Bundled data importer missing: " + str(feeder))
+        return [str(feeder), *paths, "--out", str(DATA)]
+    return [sys.executable, "-u", str(ROOT / "feed_data.py"), *paths, "--out", str(DATA)]
+
+def training_command(args):
+    # Training needs an explicitly configured Python/CUDA environment. Do not bundle multi-GB GPU libraries.
+    python = os.environ.get("COSMOS_TRAIN_PYTHON")
+    if not python:
+        raise RuntimeError("LoRA training requires Python 3.11 with CUDA/PyTorch/PEFT on a GPU computer. Set COSMOS_TRAIN_PYTHON to that Python executable, then reopen the board. Data import works here without Python.")
+    return [python, "-u", str(ROOT / "train_lora.py"), *args]
+
 
 class Board(tk.Tk):
     def __init__(self):
@@ -25,7 +44,7 @@ class Board(tk.Tk):
         self.rate = tk.StringVar(value="0.0002")
         self.rank = tk.StringVar(value="16")
         self.base = tk.StringVar(value="HuggingFaceTB/SmolLM2-1.7B-Instruct")
-        self.output = tk.StringVar(value=str(ROOT / "outputs/cosmos-lora"))
+        self.output = tk.StringVar(value=str(USER_ROOT / "outputs" / "cosmos-lora"))
         self.build()
         self.after(150, self.pump)
 
@@ -58,7 +77,7 @@ class Board(tk.Tk):
         self.log = tk.Text(panel, bg="#0d1729", fg="#d3dff7", insertbackground="white", font=("Consolas", 10), wrap="word")
         self.log.pack(fill="both", expand=True, pady=(7, 0))
         self.write("Memory import does not change model weights.")
-        self.write("Actual LoRA training needs a CUDA GPU and supervised prompt/completion examples.")
+        self.write("Import works without Python. LoRA training requires an external CUDA/Python environment.")
 
     def write(self, message):
         self.log.insert("end", str(message) + "\n")
@@ -81,7 +100,11 @@ class Board(tk.Tk):
     def import_files(self):
         paths = filedialog.askopenfilenames(title="Import private documents", filetypes=[("Text, Markdown, JSON", "*.txt *.md *.json")])
         if paths:
-            args = [sys.executable, "-u", str(ROOT / "feed_data.py"), *paths, "--out", str(DATA)]
+            try:
+                args = feeder_command(paths)
+            except Exception as exc:
+                self.write("ERROR: " + str(exc))
+                return
             threading.Thread(target=lambda: self.run_cmd(args, "Import"), daemon=True).start()
 
     def choose_dataset(self):
@@ -109,9 +132,13 @@ class Board(tk.Tk):
         except ValueError as exc:
             messagebox.showerror("Settings", str(exc))
             return
-        args = [sys.executable, "-u", str(ROOT / "train_lora.py"), "--dataset", self.dataset.get(),
+        try:
+            args = training_command(["--dataset", self.dataset.get(),
                 "--output", self.output.get(), "--base", self.base.get(),
-                "--epochs", str(epochs), "--learning-rate", str(rate), "--rank", str(rank)]
+                "--epochs", str(epochs), "--learning-rate", str(rate), "--rank", str(rank)])
+        except Exception as exc:
+            messagebox.showerror("GPU training setup", str(exc))
+            return
         threading.Thread(target=lambda: self.run_cmd(args, "LoRA training"), daemon=True).start()
 
     def stop(self):

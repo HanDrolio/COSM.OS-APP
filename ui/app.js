@@ -38,6 +38,7 @@ async function boot(){
  el('model').onclick=()=>action(async()=>{state=await api.chooseModel();render();note('Selected local GGUF.');});
  el('start').onclick=()=>action(async()=>{await api.start();note('Engine ready. Chat locally.');});
  el('import').onclick=()=>action(async()=>{const result=await api.import();note('Imported '+result.added+' local memory chunks. Nothing uploaded.');});
+ el('trainer').onclick=()=>action(async()=>{await api.trainer();note('Opening separate COSM.OS Model Trainer window.');});
  el('clear').onclick=()=>action(async()=>{state=await api.clear();drawMessages();render();note('Local chat cleared.');});
 }
 boot().catch(e=>note('Startup error: '+e.message));

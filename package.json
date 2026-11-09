@@ -31,6 +31,13 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "dist-trainer",
+        "to": "trainer",
+        "filter": [
+          "*.exe"
+        ]
       }
     ],
     "win": {

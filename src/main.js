@@ -16,6 +16,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function report(type,payload){if(win&&!win.isDestroyed())win.webContents.send(type,payload);}
 function modelPath(){return state.modelPath||path.join(app.getPath('userData'),'models',MODEL_FILE);}
 function getRuntime(){const root=app.isPackaged?path.join(process.resourcesPath,'runtime'):path.join(__dirname,'..','vendor','llama');return path.join(root,'llama-server.exe');}
+function trainerPath(){return app.isPackaged?path.join(process.resourcesPath,'trainer','COSM.OS-Model-Trainer.exe'):path.join(__dirname,'..','dist-trainer','COSM.OS-Model-Trainer.exe');}
+function launchTrainer(){const executable=trainerPath();if(!fs.existsSync(executable))throw Error('Trainer executable is missing from this build.');const child=spawn(executable,[],{detached:true,windowsHide:false,stdio:'ignore'});child.on('error',error=>report('engine:status','Trainer launch failed: '+error.message));child.unref();return {launched:true};}
 function status(){return {mode:state.mode,history:state.history.slice(-150),noteCount:state.notes.length,modelInstalled:fs.existsSync(modelPath()),runtimeInstalled:fs.existsSync(getRuntime()),modelFile:path.basename(modelPath()),busy};}
 function persist(){save(storeFile,state);}
 async function getPort(){return new Promise((res,rej)=>{const server=net.createServer();server.unref();server.on('error',rej);server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>res(port));});});}
@@ -122,6 +124,7 @@ function installHandlers(){
   let added=0;for(const filename of pick.filePaths){const chunks=importFile(filename);for(const c of chunks){state.notes.push(c);added++;}}
   state.notes=state.notes.slice(-2500);persist();report('app:state',status());return {added};
  });
+ ipcMain.handle('app:trainer',()=>launchTrainer());
  ipcMain.handle('app:clear',()=>{state.history=[];persist();report('app:state',status());return status();});
  ipcMain.handle('app:cancel',()=>{abortStream?.abort();return true;});
 }
