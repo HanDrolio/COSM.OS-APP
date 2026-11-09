@@ -1,0 +1,48 @@
+name: Build COSM.OS LOCAL for Windows
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Test JavaScript core
+        run: npm test
+      - name: Download bundled CPU inference engine
+        shell: pwsh
+        run: ./scripts/prepare-runtime.ps1
+      - name: Package trainer and data importer executables
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check pyinstaller==6.16.0
+          pyinstaller --noconfirm --clean --onefile --windowed --name COSM.OS-Model-Trainer --distpath dist-trainer --workpath build-trainer --specpath build-trainer --add-data "$((Resolve-Path training/train_lora.py).Path);training" training/control_board.py
+          pyinstaller --noconfirm --clean --onefile --console --name COSM.OS-Data-Importer --distpath dist-trainer --workpath build-importer --specpath build-importer training/feed_data.py
+          if (!(Test-Path 'dist-trainer/COSM.OS-Model-Trainer.exe') -or !(Test-Path 'dist-trainer/COSM.OS-Data-Importer.exe')) { throw 'Trainer packaging failed' }
+      - name: Build Windows installer
+        run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: COSM.OS-LOCAL-Windows-Installer
+          path: dist/*.exe
+
+      - name: Publish v0.1.0 pre-release on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v0.1.0'
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) { Write-Host "Release $tag already exists; skipping."; exit 0 }
+          gh release create $tag dist/*.exe --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title 'COSM.OS LOCAL v0.1.0' --prerelease --notes 'First Windows preview. One installer includes COSM.OS chatbot and separate model trainer. The GGUF model downloads on first use. LoRA weight training requires a separate CUDA GPU and Python environment. This is an early build and has not been verified end-to-end on the target ThinkCentre.'

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+models/
+vendor/
+training/data/
+training/outputs/
+training/.venv/
+*.gguf
+*.gguf.part
+.env
+*.db

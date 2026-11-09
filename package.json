@@ -1,0 +1,60 @@
+{
+  "name": "cosm-os-app",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.js",
+  "description": "Offline desktop AI with embedded llama.cpp and COSM.OS personas",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^36.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "io.handrolio.cosmoslocal",
+    "productName": "COSM.OS LOCAL",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/llama",
+        "to": "runtime",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "dist-trainer",
+        "to": "trainer",
+        "filter": [
+          "*.exe"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "COSM.OS-LOCAL-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}
