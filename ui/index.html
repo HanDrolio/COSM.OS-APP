@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COSM.OS LOCAL</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="shell">
+<aside><div class="brand"><span class="mark">🟦🌌🟨</span><strong>COSM.OS <small>LOCAL</small></strong></div>
+<p class="eyebrow">MODE LOCK</p><div id="personas" class="personas"></div>
+<div class="aside-bottom"><div class="tiny">No Ollama. No cloud chat service.<br>Human-owned local memory.</div></div>
+</aside>
+<main>
+<header><div><h1 id="mode-title">🟣🌀 Flux</h1><p id="role">Creative synthesis • locked</p></div><div class="pill" id="connection">ENGINE OFFLINE</div></header>
+<section id="messages" aria-label="Conversation" class="messages"></section>
+<footer>
+<div id="status" aria-live="polite">Welcome to COSM.OS. Download the model once to chat offline.</div>
+<div class="toolbar"><button id="download">Download model</button><button id="model">Choose GGUF</button><button id="start">Start engine</button><button id="import">Import memory</button><button id="clear">Clear chat</button></div>
+<div class="composer"><textarea id="prompt" rows="2" placeholder="Say something. Switch modes with /mode orion…" aria-label="Message"></textarea><button id="send">Send</button></div>
+<div class="hint">Enter sends • Shift+Enter adds a line • /mode flux locks persona • Imported text is local reference memory, not weight training.</div>
+</footer>
+</main></div><script src="app.js"></script></body></html>
