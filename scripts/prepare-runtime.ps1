@@ -5,7 +5,7 @@ $destination = Join-Path $root "vendor\llama"
 New-Item -ItemType Directory -Force -Path $destination | Out-Null
 $headers = @{"User-Agent"="COSM.OS-LOCAL";"Accept"="application/vnd.github+json"}
 if ($env:GITHUB_TOKEN) { $headers["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
-$release = Invoke-RestMethod -Uri "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest" -Headers $headers
+$release = Invoke-RestMethod -Uri "https://api.github.com/repos/ggml-org/llama.cpp/releases/tags/b12211" -Headers $headers
 $asset = $release.assets | Where-Object { $_.name -match "win-cpu-x64.*\.zip$" } | Select-Object -First 1
 if (-not $asset) { throw "No Windows CPU x64 release asset found. Check llama.cpp GitHub Releases." }
 $temp = Join-Path $env:TEMP ("cosmosruntime-" + [guid]::NewGuid().ToString("N"))
