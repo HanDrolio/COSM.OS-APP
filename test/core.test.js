@@ -1,0 +1,11 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const {PERSONAS,command,recall,messages}=require('../src/core');
+const {extract,chunks}=require('../src/importer');
+test('exactly eight personas',()=>assert.equal(Object.keys(PERSONAS).length,8));
+test('natural-language switching is deterministic',()=>assert.deepEqual(command('Switch to Orion'),{type:'mode',mode:'orion',requested:'Orion'}));
+test('unknown persona cannot become active',()=>assert.equal(command('/mode banana').mode,null));
+test('ordinary text cannot change mode',()=>assert.equal(command('I like Orion stories'),null));
+test('mode system prompt is locked',()=>assert.match(messages('ripple',[],[])[0].content,/Current mode: Ripple/));
+test('relevant memories get retrieved',()=>assert.deepEqual(recall([{content:'Cosmic Surfer is cobalt blue'},{content:'I like rain'}],'cosmic color'),['Cosmic Surfer is cobalt blue']));
+test('json export strings are extracted',()=>assert.deepEqual(extract([{role:'user',content:'hello'}]),['user: hello']));
+test('document chunker works',()=>assert.ok(chunks('hello world this is a longer sentence').length));
