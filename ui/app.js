@@ -1,8 +1,10 @@
 'use strict';
 const api=window.cosmos;const el=id=>document.getElementById(id);
 let personas={},state={mode:'flux',history:[],busy:false},isSending=false,draft=null;
-function add(role,text){const div=document.createElement('div');div.className='msg '+role;div.textContent=text;el('messages').appendChild(div);el('messages').scrollTop=el('messages').scrollHeight;return div;}
-function drawMessages(){el('messages').replaceChildren();if(!state.history.length){const p=document.createElement('div');p.className='welcome';p.innerHTML='<strong>🟦🌌🟨 SIGNAL ONLINE</strong>A fresh COSM.OS, built for your own computer.<br>The eight voices are here. The operator holds the switch.';el('messages').appendChild(p);}for(const msg of state.history)add(msg.role,msg.content);}
+function scrollChat(){const panel=el('messages');panel.scrollTop=panel.scrollHeight;}
+
+function add(role,text){const div=document.createElement('div');div.className='msg '+role;div.textContent=text;el('messages').appendChild(div);scrollChat();return div;}
+function drawMessages(){el('messages').replaceChildren();if(!state.history.length){const p=document.createElement('div');p.className='welcome';p.innerHTML='<strong>🟦🌌🟨 SIGNAL ONLINE</strong>A fresh COSM.OS, built for your own computer.<br>The eight voices are here. The operator holds the switch.';el('messages').appendChild(p);}for(const msg of state.history)add(msg.role,msg.content);scrollChat();}
 function render(){
  const persona=personas[state.mode]||personas.flux;
  el('mode-title').textContent=(persona?.glyph||'🟣🌀')+' '+(persona?.name||'Flux')+' 🔒';
@@ -24,7 +26,9 @@ async function send(){
   else if(result.status==='info')draft.textContent='Current mode: '+result.mode+'.';
   else if(result.status==='ok')draft.textContent=result.answer;
  }catch(e){draft.textContent='Local engine error: '+e.message;}finally{
-  isSending=false;draft=null;state=await api.status();drawMessages();render();el('prompt').focus();
+  isSending=false;draft=null;
+  try{state=await api.status();drawMessages();}catch(e){note('Could not refresh chat: '+e.message);}
+  render();el('prompt').focus();
  }
 }
 async function boot(){
@@ -32,7 +36,7 @@ async function boot(){
  api.on('app:state',next=>{state=next;render();});
  api.on('engine:status',msg=>note(msg));
  api.on('model:download',({bytes,total})=>note('Downloading model: '+(bytes/1048576).toFixed(0)+' MB'+(total?' / '+(total/1048576).toFixed(0)+' MB':'')));
- api.on('chat:delta',({delta})=>{if(draft){if(draft.textContent==='…')draft.textContent='';draft.textContent+=delta;el('messages').scrollTop=el('messages').scrollHeight;}});
+ api.on('chat:delta',({delta})=>{if(draft){if(draft.textContent==='…')draft.textContent='';draft.textContent+=delta;scrollChat();}});
  el('send').onclick=send;el('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
  el('download').onclick=()=>action(async()=>{await api.download();state=await api.status();render();note('Model downloaded and verified. Click Start engine.');});
  el('model').onclick=()=>action(async()=>{state=await api.chooseModel();render();note('Selected local GGUF.');});
